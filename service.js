@@ -1,6 +1,16 @@
-const { parentPort } = require('worker_threads');
+const { threadId } = require('worker_threads');
+const Arweave = require("arweave");
+const fs = require("fs");
 
-let keyfile = await client.wallets.generate();
-let wallet = await client.wallets.jwkToAddress(keyfile);
+const client = Arweave.init({
+    host: 'arweave.net',
+    port: 443,
+    protocol: 'https',
+    timeout: 20000,
+    logging: false,
+});
 
-parentPort.postMessage({ wallet });
+client.wallets.generate().then((keyfile) => {
+    // let wallet = await client.wallets.jwkToAddress(keyfile);
+    fs.writeFileSync(`wallets/wallet_${threadId}.json`, JSON.stringify(keyfile, null, 4));
+});

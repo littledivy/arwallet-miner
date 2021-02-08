@@ -4,28 +4,31 @@
 const { Worker } = require('worker_threads');
 const Arweave = require('arweave');
 
-const client = Arweave.init({
-    host: 'arweave.net',
-    port: 443,
-    protocol: 'https',
-    timeout: 20000,
-    logging: false,
-});
-
 let wallet = "";
 let phrase = "123";
 let keyfile = {};
-
 const phraseInWallet = () => wallet.substring(0, phrase.length);
 
+let n_thread = new Array(20); for (let i=0; i<20; ++i) n_thread[i] = false;
 function generateWallet() {
     let i = 0;
     while (phraseInWallet() !== phrase) {
-        const worker = new Worker('./service.js');
-        worker.on('message', ({ wallet }) => {
-            fs.writeFile(`wallet_${i}.json`, wallet);
-        });
-        i++;
+        if(n_thread.includes(false)) {
+            n_thread[n_thread.indexOf(false)] = true;
+            
+            const worker = new Worker('./service.js');
+            console.log(`Spawned thread...${worker.threadId}`);
+            i++;
+            worker.on('error', console.error);
+            worker.on('messageerror', console.error);
+            worker.on('exit', () => {
+                console.log(`Closing Thread...${worker.threadId}`);
+                n_thread[n_thread.indexOf(true)] = false;
+                generateWallet();
+            });   
+        } else {
+            break
+        }
     }
 }
 
