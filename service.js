@@ -1,4 +1,4 @@
-const { threadId } = require('worker_threads');
+const { workerData, threadId } = require('worker_threads');
 const Arweave = require("arweave");
 const fs = require("fs");
 
@@ -10,7 +10,8 @@ const client = Arweave.init({
     logging: false,
 });
 
-client.wallets.generate().then((keyfile) => {
-    // let wallet = await client.wallets.jwkToAddress(keyfile);
-    fs.writeFileSync(`wallets/wallet_${threadId}.json`, JSON.stringify(keyfile, null, 4));
+client.wallets.generate().then(async (keyfile) => {
+    let addr = await client.wallets.jwkToAddress(keyfile);
+    fs.writeFileSync(`wallets/${workerData.dir}/wallet_${threadId}.json`, JSON.stringify(keyfile));
+    fs.writeFileSync(`wallets/${workerData.dir}/addr_${threadId}.txt`, addr);
 });
