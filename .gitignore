@@ -1,2 +1,6 @@
 wallets/
 node_modules/
+target/
+# TODO: remove me.
+arwallet.txt
+
