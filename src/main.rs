@@ -65,24 +65,22 @@ fn main() {
             let mut hasher = Sha256::new();
             hasher.update(n);
             let address = safe_encode!(&hasher.finalize()[..]);
+            let id: u128 = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis();
             if address.starts_with("divy") {
                 // REPLACE ME with your ideal subphrase.
                 let mut data = data.lock().unwrap();
                 *data = 1;
-                println!("Found! {}", &address);
+                println!("Found! {}\n Thread ID: {}", &address, id);
             }
             let jwk = serde_json::to_vec(&jwk).expect("Failed to serialize wallet.");
             let mut curr_threads = threads.lock().unwrap();
-            fs::write(
-                format!("wallets/{}/addr_{}.txt", dir, *curr_threads),
-                address,
-            )
-            .expect("Unable to address to file");
-            fs::write(
-                format!("wallets/{}/wallet_{}.json", dir, *curr_threads),
-                jwk,
-            )
-            .expect("Unable to jwk to file");
+            fs::write(format!("wallets/{}/addr_{}.txt", dir, id), address)
+                .expect("Unable to address to file");
+            fs::write(format!("wallets/{}/wallet_{}.json", dir, id), jwk)
+                .expect("Unable to jwk to file");
             println!("{} Active: {}", "Closing thread...", *curr_threads);
             *curr_threads -= 1;
         });
