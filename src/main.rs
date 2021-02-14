@@ -69,18 +69,18 @@ fn main() {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_millis();
-            if address.starts_with("divy") {
+            if address.starts_with("a") {
                 // REPLACE ME with your ideal subphrase.
                 let mut data = data.lock().unwrap();
                 *data = 1;
                 println!("Found! {}\n Thread ID: {}", &address, id);
+                let jwk = serde_json::to_vec(&jwk).expect("Failed to serialize wallet.");
+                fs::write(format!("wallets/{}/addr_{}.txt", dir, id), address)
+                    .expect("Unable to address to file");
+                fs::write(format!("wallets/{}/wallet_{}.json", dir, id), jwk)
+                    .expect("Unable to jwk to file");
             }
-            let jwk = serde_json::to_vec(&jwk).expect("Failed to serialize wallet.");
             let mut curr_threads = threads.lock().unwrap();
-            fs::write(format!("wallets/{}/addr_{}.txt", dir, id), address)
-                .expect("Unable to address to file");
-            fs::write(format!("wallets/{}/wallet_{}.json", dir, id), jwk)
-                .expect("Unable to jwk to file");
             println!("{} Active: {}", "Closing thread...", *curr_threads);
             *curr_threads -= 1;
         });
