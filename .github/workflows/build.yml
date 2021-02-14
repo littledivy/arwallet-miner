@@ -28,12 +28,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2
 
-      - name: Setup Rust (${{ github.event.inputs.toolchain }})
+      - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: ${{ matrix.target }}
           override: true
+          default: true
 
       - name: Install OpenSSL (macOS)
         if: runner.os == 'macOS'
@@ -41,7 +42,7 @@ jobs:
 
       - name: Install OpenSSL (Windows)
         if: runner.os == 'Windows'
-        run: choco install openssl
+        run: choco install openssl --no-progress
 
       - name: Build
         uses: actions-rs/cargo@v1
