@@ -1,0 +1,59 @@
+name: Rust
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: build / ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-20.04
+          - target: x86_64-pc-windows-msvc
+            os: windows-2019
+          - target: x86_64-apple-darwin
+            os: macos-11.0
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Setup Rust (${{ github.event.inputs.toolchain }})
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: false
+          command: build
+          args: --target ${{ matrix.target }} --release
+
+      - name: Zip unix build
+        if: runner.os != 'Windows'
+        working-directory: target/${{ matrix.target }}/release
+        run: zip -r arwallet-miner-${{ matrix.target }}.zip arwallet_miner
+
+      - name: Zip windows build
+        if: runner.os == 'Windows'
+        working-directory: target/${{ matrix.target }}/release
+        run: Compress-Archive -Path arwallet_miner.exe -DestinationPath arwallet-miner-${{ matrix.target }}.zip
+
+      - name: Upload Builds
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/arwallet-miner-${{ matrix.target }}.zip
