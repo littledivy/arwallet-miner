@@ -1,4 +1,4 @@
-name: Build
+name: build
 
 on:
   push:
@@ -9,7 +9,7 @@ env:
 
 jobs:
   build:
-    name: build / ${{ matrix.target }}
+    name: ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
 
@@ -35,11 +35,11 @@ jobs:
           target: ${{ matrix.target }}
           override: true
 
-      - name: Install OpenSSL using brew (macOS)
+      - name: Install OpenSSL (macOS)
         if: runner.os == 'macOS'
         run: brew install openssl
 
-      - name: Install OpenSSL
+      - name: Install OpenSSL (Windows)
         if: runner.os == 'Windows'
         run: |
           echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
