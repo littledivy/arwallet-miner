@@ -34,7 +34,13 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target }}
           override: true
-
+      
+      - name: Install OpenSSL using vcpkg (windows)
+        if: runner.os == 'Windows'
+        run: |
+          vcpkg install openssl:x64-windows
+          set VCPKG_ROOT=c:\path\to\vcpkg\installation
+      
       - name: Build
         uses: actions-rs/cargo@v1
         with:
