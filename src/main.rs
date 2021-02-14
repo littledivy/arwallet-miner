@@ -1,3 +1,4 @@
+use clap::{value_t, App, Arg, SubCommand};
 use openssl::bn::BigNum;
 use openssl::rsa::Rsa;
 use serde::Serialize;
@@ -23,14 +24,36 @@ struct Key {
 }
 
 fn main() {
+    let matches = App::new("Arweave Wallet Miner")
+        .version("1.0")
+        .author("Divy Srivastava <dj.srivastava23@gmail.com>")
+        .about("Multi-threaded wallet mining tool built on top of OpenSSL.")
+        .arg(
+            Arg::with_name("THREADS")
+                .short("t")
+                .long("threads")
+                .value_name("THREADS")
+                .help("Sets the number of worker threads to spawn at a time.")
+                .takes_value(true)
+                .default_value("20"),
+        )
+        .arg(
+            Arg::with_name("PHRASE")
+                .help("Sets the ideal phrase to match with.")
+                .required(true)
+                .index(1),
+        )
+        .get_matches();
+
+    let ideal_phrase = Arc::new(matches.value_of("PHRASE").unwrap().to_owned());
+    let n_workers = value_t!(matches.value_of("THREADS"), usize).unwrap_or_else(|e| e.exit());
+
     let dir: u128 = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_millis();
-
     fs::create_dir(format!("wallets/{}", dir)).expect("Failed to create directory.");
 
-    let n_workers = 20;
     let pool = ThreadPool::new(n_workers);
     // Shared thread state to check if ideal phrase was found or not.
     // Not using bool because it doesn't impelement Copy trait.
@@ -40,7 +63,7 @@ fn main() {
     let curr_threads = Arc::new(Mutex::new(0));
 
     loop {
-        if *curr_threads.lock().unwrap() >= 20 {
+        if *curr_threads.lock().unwrap() >= n_workers {
             continue;
         }
         if *done.lock().unwrap() == 1 {
@@ -51,7 +74,7 @@ fn main() {
         println!("{} {}", "Filling thread...", threads);
         let threads = Arc::clone(&curr_threads);
         let data = Arc::clone(&done);
-
+        let ideal_phrase = Arc::clone(&ideal_phrase);
         pool.execute(move || {
             let exponent = BigNum::from_u32(65537).unwrap();
             let key = Rsa::generate_with_e(4096, &exponent).unwrap();
@@ -69,7 +92,7 @@ fn main() {
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_millis();
-            if address.starts_with("a") {
+            if address.starts_with(&ideal_phrase.to_string()) {
                 // REPLACE ME with your ideal subphrase.
                 let mut data = data.lock().unwrap();
                 *data = 1;
