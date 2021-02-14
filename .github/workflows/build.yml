@@ -59,6 +59,5 @@ jobs:
           name: ${{ matrix.target }}
           path: |
             README.md
-            
             target/${{ matrix.target }}/release/arwallet_miner
             target/${{ matrix.target }}/release/arwallet_miner.exe
