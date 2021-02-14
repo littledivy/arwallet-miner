@@ -1,4 +1,4 @@
-use clap::{App, Arg, SubCommand};
+use clap::{value_t, App, Arg, SubCommand};
 use openssl::bn::BigNum;
 use openssl::rsa::Rsa;
 use serde::Serialize;
@@ -29,18 +29,29 @@ fn main() {
         .author("Divy Srivastava <dj.srivastava23@gmail.com>")
         .about("Multi-threaded wallet mining tool built on top of OpenSSL.")
         .arg(
+            Arg::with_name("THREADS")
+                .short("t")
+                .long("threads")
+                .value_name("THREADS")
+                .help("Sets the number of worker threads to spawn at a time.")
+                .takes_value(true)
+                .default_value("20"),
+        )
+        .arg(
             Arg::with_name("PHRASE")
-                .help("Sets the number of threads to use")
+                .help("Sets the ideal phrase to match with.")
                 .required(true)
                 .index(1),
         )
         .get_matches();
+
     let ideal_phrase = Arc::new(matches.value_of("PHRASE").unwrap().to_owned());
+    let n_workers = value_t!(matches.value_of("THREADS"), usize).unwrap_or_else(|e| e.exit());
+
     let dir: u128 = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_millis();
-    let n_workers = 20;
     fs::create_dir(format!("wallets/{}", dir)).expect("Failed to create directory.");
 
     let pool = ThreadPool::new(n_workers);
