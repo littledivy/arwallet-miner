@@ -35,11 +35,9 @@ jobs:
           target: ${{ matrix.target }}
           override: true
       
-      - name: Install OpenSSL using vcpkg (windows)
+      - name: Install OpenSSL using choco (windows)
         if: runner.os == 'Windows'
-        run: |
-          vcpkg install openssl:x64-windows
-          set VCPKG_ROOT=c:\path\to\vcpkg\installation
+        run: choco install openssl
       
       - name: Build
         uses: actions-rs/cargo@v1
