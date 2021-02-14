@@ -19,8 +19,6 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-20.04
-          - target: x86_64-pc-windows-msvc
-            os: windows-2019
           - target: x86_64-apple-darwin
             os: macos-11.0
 
@@ -35,9 +33,9 @@ jobs:
           target: ${{ matrix.target }}
           override: true
       
-      - name: Install OpenSSL using choco (windows)
-        if: runner.os == 'Windows'
-        run: choco install openssl
+      - name: Install OpenSSL using brew (macOS)
+        if: runner.os == 'macOS'
+        run: brew install openssl
       
       - name: Build
         uses: actions-rs/cargo@v1
