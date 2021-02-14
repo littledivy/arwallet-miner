@@ -1,0 +1,88 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version
+        required: true
+
+jobs:
+  build:
+    name: build / ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-20.04
+          - target: x86_64-pc-windows-msvc
+            os: windows-2019
+          - target: x86_64-apple-darwin
+            os: macos-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+          default: true
+
+      - name: Install OpenSSL (macOS)
+        if: runner.os == 'macOS'
+        run: brew install openssl
+
+      - name: Install OpenSSL (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Append
+          vcpkg install openssl:x64-windows
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: false
+          command: build
+          args: --target ${{ matrix.target }} --release --locked
+
+      - name: Zip unix build
+        if: runner.os != 'Windows'
+        working-directory: target/${{ matrix.target }}/release
+        run: zip -r arwallet-miner-${{ matrix.target }}.zip arwallet_miner
+
+      - name: Zip windows build
+        if: runner.os == 'Windows'
+        working-directory: target/${{ matrix.target }}/release
+        run: Compress-Archive -Path arwallet_miner.exe -DestinationPath arwallet-miner-${{ matrix.target }}.zip
+
+      - name: Upload Builds
+        uses: actions/upload-artifact@v2
+        with:
+          name: release
+          path: target/${{ matrix.target }}/release/arwallet-miner-${{ matrix.target }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Download Builds
+        uses: actions/download-artifact@v2
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.event.inputs.tag }}
+          name: v${{ github.event.inputs.tag }}
+          artifacts: 'release/*'
+          body: ''
+          token: ${{ secrets.GITHUB_TOKEN }}
