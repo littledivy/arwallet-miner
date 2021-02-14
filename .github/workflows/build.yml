@@ -34,7 +34,7 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target }}
           override: true
-      
+
       - name: Install OpenSSL using brew (macOS)
         if: runner.os == 'macOS'
         run: brew install openssl
