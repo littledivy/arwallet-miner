@@ -89,8 +89,8 @@ jobs:
       - name: Release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.version.outputs.tag }}
-          name: ${{ steps.version.outputs.tag }}
+          tag: draft
+          name: draft
           draft: true
           prerelease: false
           allowUpdates: true
