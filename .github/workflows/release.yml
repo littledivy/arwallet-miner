@@ -49,12 +49,12 @@ jobs:
       - name: Zip unix build
         if: runner.os != 'Windows'
         working-directory: target/${{ matrix.target }}/release
-        run: zip -r arwallet-miner-${{ matrix.target }}.zip arwallet_miner
+        run: zip -r ../../../arwallet-miner-${{ matrix.target }}.zip arwallet_miner
 
       - name: Zip windows build
         if: runner.os == 'Windows'
         working-directory: target/${{ matrix.target }}/release
-        run: Compress-Archive -Path arwallet_miner.exe -DestinationPath arwallet-miner-${{ matrix.target }}.zip
+        run: Compress-Archive -Path arwallet_miner.exe -DestinationPath ../../../arwallet-miner-${{ matrix.target }}.zip
 
       - name: Setup Deno
         if: startsWith(matrix.os, 'ubuntu')
