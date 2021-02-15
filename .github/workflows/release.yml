@@ -88,6 +88,7 @@ jobs:
 
       - name: Release
         uses: ncipollo/release-action@v1
+        if: startsWith(matrix.os, 'ubuntu')
         with:
           tag: draft
           name: draft
