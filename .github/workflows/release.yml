@@ -13,6 +13,8 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-20.04
+          - target: x86_64-pc-windows-msvc
+            os: windows-2019
           - target: x86_64-apple-darwin
             os: macos-latest
 
@@ -30,7 +32,13 @@ jobs:
       - name: Install OpenSSL using brew (macOS)
         if: runner.os == 'macOS'
         run: brew install openssl
-      
+
+      - name: Install OpenSSL (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install openssl --no-progress
+          echo "OPENSSL_DIR=C:\Program Files\OpenSSL-Win64" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Build
         uses: actions-rs/cargo@v1
         with:
@@ -52,18 +60,18 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         uses: denolib/setup-deno@v2
         with:
-          deno-version: v1.3.2
+          deno-version: v1.x
 
       - name: Generate Release Notes
         if: startsWith(matrix.os, 'ubuntu')
-        run: deno run -A https://deno.land/x/prlog@0.3.1/prlog.ts littledivy/arwallet-miner -v DRAFT -t .github/release.t.md -o release.md --auth ${{ secrets.GITHUB_TOKEN }}
+        run: deno run -A https://deno.land/x/ghlog/ghlog.ts littledivy/arwallet-miner
 
       - name: Upload Release Notes
         uses: actions/upload-artifact@v2
         if: startsWith(matrix.os, 'ubuntu')
         with:
           name: notes
-          path: release.md
+          path: CHANGELOG.md
           if-no-files-found: error
 
       - name: Upload release artifacts
@@ -71,9 +79,10 @@ jobs:
         with:
           name: release
           path: |
-            verto-x64-linux.zip
-            verto-x64-macos.zip
-            verto-x64-windows.zip
+            arwallet-miner-x86_64-unknown-linux-gnu.zip
+            arwallet-miner-x86_64-pc-windows-msvc.zip
+            arwallet-miner-x86_64-apple-darwin.zip
+
       - name: Download artifacts
         uses: actions/download-artifact@v2
 
@@ -87,5 +96,5 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
           artifacts: "release/*"
-          bodyFile: "notes/release.md"
+          bodyFile: "CHANGELOG.md"
           token: ${{ secrets.GITHUB_TOKEN }}
