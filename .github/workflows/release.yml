@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: release / ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-20.04
+          - target: x86_64-apple-darwin
+            os: macos-latest
+
+    steps:
+      - name: Setup repo
+        uses: actions/checkout@v2
+      
+      - name: Setup Rust (${{ github.event.inputs.toolchain }})
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      
+      - name: Install OpenSSL using brew (macOS)
+        if: runner.os == 'macOS'
+        run: brew install openssl
+      
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: false
+          command: build
+          args: --target ${{ matrix.target }} --release
+
+      - name: Zip unix build
+        if: runner.os != 'Windows'
+        working-directory: target/${{ matrix.target }}/release
+        run: zip -r arwallet-miner-${{ matrix.target }}.zip arwallet_miner
+
+      - name: Zip windows build
+        if: runner.os == 'Windows'
+        working-directory: target/${{ matrix.target }}/release
+        run: Compress-Archive -Path arwallet_miner.exe -DestinationPath arwallet-miner-${{ matrix.target }}.zip
+
+      - name: Setup Deno
+        if: startsWith(matrix.os, 'ubuntu')
+        uses: denolib/setup-deno@v2
+        with:
+          deno-version: v1.3.2
+
+      - name: Generate Release Notes
+        if: startsWith(matrix.os, 'ubuntu')
+        run: deno run -A https://deno.land/x/prlog@0.3.1/prlog.ts littledivy/arwallet-miner -v DRAFT -t .github/release.t.md -o release.md --auth ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Notes
+        uses: actions/upload-artifact@v2
+        if: startsWith(matrix.os, 'ubuntu')
+        with:
+          name: notes
+          path: release.md
+          if-no-files-found: error
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: release
+          path: |
+            verto-x64-linux.zip
+            verto-x64-macos.zip
+            verto-x64-windows.zip
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          draft: true
+          prerelease: false
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: "release/*"
+          bodyFile: "notes/release.md"
+          token: ${{ secrets.GITHUB_TOKEN }}
